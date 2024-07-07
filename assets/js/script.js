@@ -46,6 +46,7 @@ function determineLatLon(inCity) {
             };
             // remove any alert that may be on screen
             $("#tempDanger").remove();
+            $("#input-city").val();
             // pass the coordinates on to determineWeather
             determineToday(objCoords, strCity);
             determineFiveDay(objCoords);
@@ -172,7 +173,7 @@ function calculateFiveDay({ city, list }) {
     }
     // new day - so take the sums and divide by the counts to get the means and send them to the display function
     else {
-            // if current date is not today, display below
+      // if current date is not today, display below
       if (curDate !== dayjs().format("YYYY-MM-DD"))
         calculateDisplayAverages(strCity, tempSum, humSum, windSum, counts, curDate, false, "", desc, icon);
       // increment day count and set the temp values to the first value found for the day, reset the counts to 1 and update the date
