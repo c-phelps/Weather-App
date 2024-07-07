@@ -1,10 +1,10 @@
-const btnSubmit = $("#btn-submit");
-const btnCitySubmit = $(".btn-city");
 const apiKey = "b363657ebc1fdf19e08e3e1308890a40";
+const btnSubmit = $("#btn-submit");
 const eleTodayParent = $("#today-append");
 const eleFiveDayParent = $("#5-day-Append");
 const eleAppendSearches = $("#append-searches");
 
+// append and display alert for city not found or invalid city name
 function appendAlert(city) {
   const strWarning = city !== 0 ? `The city '${city}' was not found!` : `Please enter a valid city name.`;
   const eleAlert = $("<div>");
@@ -20,6 +20,7 @@ function appendAlert(city) {
   eleTodayParent.append(eleAlert);
 }
 
+// determine the lat and lon for the in city
 function determineLatLon(inCity) {
   // fetch city
   let strCity = inCity || $("#input-city").val();
@@ -58,7 +59,6 @@ function determineLatLon(inCity) {
       }
       // give an alert if the response was anything other than ok
       else {
-        // appendAlert(strCity);
         alert(`Error:${response.statusText}`);
       }
     })
@@ -68,9 +68,9 @@ function determineLatLon(inCity) {
     });
 }
 
+// get today's weather only
 function determineToday({ Lat, Lon }, cityVal) {
   const openWeatherURL = `http://api.openweathermap.org/data/2.5/weather?lat=${Lat}&lon=${Lon}&units=imperial&cnt=48&appid=${apiKey}`;
-  console.log(openWeatherURL);
   fetch(openWeatherURL)
     .then(function (response) {
       if (response.ok) {
@@ -78,6 +78,7 @@ function determineToday({ Lat, Lon }, cityVal) {
           // pass the data for today to storeCity and calcToday functions
           storeCityCreateButton(data, cityVal);
           calculateToday(data);
+          // console.log(data);
         });
       } else {
         alert(`Error:${response.statusText}`);
@@ -88,6 +89,7 @@ function determineToday({ Lat, Lon }, cityVal) {
     });
 }
 
+// store city in local storage and create a button for that city
 function storeCityCreateButton({ name }, city) {
   let arrCities = JSON.parse(localStorage.getItem("cityInfo")) || [];
   const inArray = arrCities.findIndex(function (cities) {
@@ -104,15 +106,15 @@ function storeCityCreateButton({ name }, city) {
   }
 }
 
+// display the buttons on screen for each city stored in local storage
 function renderButtons() {
   let arrCities = JSON.parse(localStorage.getItem("cityInfo")) || [];
   let strEle = "";
   eleAppendSearches.empty();
   for (let cities in arrCities) {
-    strEle = `${strEle}<button type="button" id=${arrCities[cities].Search.replace(
-      " ",
-      "-"
-    )} class="btn btn-primary btn-city w-100 mb-2">${arrCities[cities].Display}</button>`;
+    strEle = `${strEle}<button type="button" 
+    id=${arrCities[cities].Search.replace(" ", "-")} class="btn btn-primary btn-city 
+    w-100 mb-2">${arrCities[cities].Display}</button>`;
   }
   eleAppendSearches.append(strEle);
 }
@@ -121,19 +123,18 @@ function renderButtons() {
 function calculateToday({ name, main, wind, weather, dt }) {
   // console.log(data);
   let today = dayjs.unix(dt);
-  calculateDisplayAverages(name, main.temp, main.humidity, wind.speed, 1, today, true);
+  calculateDisplayAverages(name, main.temp, main.humidity, wind.speed, 1, today, true, weather);
 }
 
 function determineFiveDay({ Lat, Lon }) {
   // call function to return lat/longitude
   const openWeatherURL = `http://api.openweathermap.org/data/2.5/forecast?lat=${Lat}&lon=${Lon}&units=imperial&cnt=48&appid=${apiKey}`;
-  // api.openweathermap.org/data/2.5/forecast/daily?lat=44.34&lon=10.99&cnt=7&appid={API key}
-  console.log(openWeatherURL);
   fetch(openWeatherURL)
     .then(function (response) {
       if (response.ok) {
         response.json().then(function (data) {
           calculateFiveDay(data);
+          // console.log(data);
         });
       } else {
         alert(`Error:${response.statusText}`);
@@ -151,60 +152,94 @@ function calculateFiveDay({ city, list }) {
     windSum = 0,
     counts = 0,
     curDate = list[0].dt_txt.split(" ")[0],
-    dayCount = 1;
+    curTime,
+    thisDate,
+    desc,
+    icon;
   const strCity = city.name;
-
   for (let obj of list) {
-    let thisDate = obj.dt_txt.split(" ")[0];
+    thisDate = obj.dt_txt.split(" ")[0];
     // check to see if the currdate is equal to the date split from the data above
     if (curDate === thisDate) {
       tempSum += obj.main.temp;
       humSum += obj.main.humidity;
       windSum += obj.wind.speed;
+      curTime = obj.dt_txt.split(" ")[1];
+      // instead of using the most frequent icon we will use the icon for mid-day (12:00 PM)
+      desc = curTime == "12:00:00" ? obj.weather[0].description : desc;
+      icon = curTime == "12:00:00" ? obj.weather[0].icon : icon;
       counts++;
     }
     // new day - so take the sums and divide by the counts to get the means and send them to the display function
     else {
-      calculateDisplayAverages(strCity, tempSum, humSum, windSum, counts, curDate, false);
+            // if current date is not today, display below
+      if (curDate !== dayjs().format("YYYY-MM-DD"))
+        calculateDisplayAverages(strCity, tempSum, humSum, windSum, counts, curDate, false, "", desc, icon);
       // increment day count and set the temp values to the first value found for the day, reset the counts to 1 and update the date
-      dayCount++;
       tempSum = obj.main.temp;
       humSum = obj.main.humidity;
       windSum = obj.wind.speed;
       curDate = thisDate;
+      desc = obj.weather[0].description;
+      icon = obj.weather[0].icon;
       counts = 1;
     }
   }
-  if (dayCount <= 5) calculateDisplayAverages(strCity, tempSum, humSum, windSum, counts, curDate, false);
+  calculateDisplayAverages(strCity, tempSum, humSum, windSum, counts, curDate, false, "", icon, icon);
 }
 
-function calculateDisplayAverages(strCity, tempSum, humSum, windSum, counts, curDate, bool) {
+// no longer used, we were finding the most frequent icon's in an array of strings and returning the value
+function determineIcon(arrWeather) {
+  // COUNT THE NUMBER OF EACH DESCRIPTION IN THE ARRAY AND DETERMINE THE DESCRIPTION THAT IS MOST FREQUENT
+  let objMap = {};
+  let weatherDesc;
+  let mostFrequent = 0;
+  for (let str of arrWeather) {
+    if (objMap[str]) {
+      objMap[str]++;
+    } else {
+      objMap[str] = 1;
+    }
+    if (objMap[str] > mostFrequent) {
+      weatherDesc = str;
+      mostFrequent = objMap[str];
+    }
+  }
+  return weatherDesc;
+}
+
+//  simple calulation function that then passes the values to the display function
+function calculateDisplayAverages(strCity, tempSum, humSum, windSum, counts, curDate, bool, weather, desc, icon) {
   const meanTemp = parseFloat(tempSum / counts).toFixed(2);
   const meanHum = parseFloat(humSum / counts).toFixed(0);
   const meanWind = parseFloat(windSum / counts).toFixed(2);
-  displayWeather(strCity, meanTemp, meanHum, meanWind, curDate, bool);
+  displayWeather(strCity, meanTemp, meanHum, meanWind, curDate, bool, weather, desc, icon);
 }
 
+// simple clear element function
 function clearElements() {
   eleTodayParent.empty();
   eleTodayParent.css("border-style", "none");
   eleFiveDayParent.empty();
 }
 
-function displayWeather(city, temp, humidity, wind, date, isToday) {
+// display the weather for today OR the cards on screen for the 5 day
+function displayWeather(city, temp, humidity, wind, date, isToday, weather, desc, icon) {
   let strAppend;
   if (isToday === true) {
-    strAppend = `<h2>${city} (${dayjs(date).format("M/D/YYYY")})</h2>`;
+    strAppend = `<h2>${city} (${dayjs(date).format("M/D/YYYY")})`;
+    strAppend = `${strAppend}<img src="https://openweathermap.org/img/wn/${weather[0].icon}@2x.png" alt="${weather[0].description}"></h2>`;
     strAppend = `${strAppend}<p>Temp: ${temp} °F</p>`;
     strAppend = `${strAppend}<p>Wind: ${wind} MPH</p>`;
     strAppend = `${strAppend}<p>Humidity: ${humidity}%</p>`;
     eleTodayParent.css("border-style", "solid");
     eleTodayParent.append(strAppend);
-    eleFiveDayParent.append(`<h3>5-Day Forecast:</h3>`);
+    eleFiveDayParent.append(`<h3>5-Day Forecast Averages:</h3>`);
   } else {
-    strAppend = `<div class="card text-white bg-info mb-3 col-2">`;
+    strAppend = `<div class="card text-white bg-info mb-3 col-lg-2 col-md-6 col-sm-12">`;
     strAppend = `${strAppend}<div class="card-header head">${dayjs(date).format("M/D/YYYY")}</div>`;
     strAppend = `${strAppend}<div class="card-body">`;
+    strAppend = `${strAppend}<img src="https://openweathermap.org/img/wn/${icon}@2x.png" alt="${desc}">`;
     strAppend = `${strAppend}<p class="p-font">Temp: ${temp} °F</p>`;
     strAppend = `${strAppend}<p class="p-font">Wind: ${wind} MPH</p>`;
     strAppend = `${strAppend}<p class="p-font">Humidity: ${humidity}%</p>`;
@@ -213,10 +248,7 @@ function displayWeather(city, temp, humidity, wind, date, isToday) {
   }
 }
 
-// TODO: Create button for each successful search and send the ID to the button as long as the ID for that button does not already exist
-// TODO: Store previous searches in local storage and populate buttons with ID based off of the search terms that were used for the city
-// TODO: Give buttons a class of btnCitySubmit so they can be targeted by the jquery event listener below
-
+// on ready make sure that the submit button and append seaches sections have event listeners for onclick
 $(document).ready(function () {
   renderButtons();
 
@@ -229,7 +261,9 @@ $(document).ready(function () {
   eleAppendSearches.on("click", function (event) {
     event.preventDefault();
     const strID = $(event.target).attr("id");
-    clearElements();
-    determineLatLon(strID.replace("-", " "));
+    if ($(event.target).is("button")) {
+      clearElements();
+      determineLatLon(strID.replace("-", " "));
+    }
   });
 });
