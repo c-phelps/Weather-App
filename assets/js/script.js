@@ -24,7 +24,7 @@ function appendAlert(city) {
 function determineLatLon(inCity) {
   // fetch city
   let strCity = inCity || $("#input-city").val();
-  const geocodingURL = `http://api.openweathermap.org/geo/1.0/direct?q=${strCity}&limit=1&appid=${apiKey}`;
+  const geocodingURL = `https://api.openweathermap.org/geo/1.0/direct?q=${strCity}&limit=1&appid=${apiKey}`;
   // form validation for city name
   if (strCity === "") {
     appendAlert(0);
@@ -71,7 +71,7 @@ function determineLatLon(inCity) {
 
 // get today's weather only
 function determineToday({ Lat, Lon }, cityVal) {
-  const openWeatherURL = `http://api.openweathermap.org/data/2.5/weather?lat=${Lat}&lon=${Lon}&units=imperial&cnt=48&appid=${apiKey}`;
+  const openWeatherURL = `https://api.openweathermap.org/data/2.5/weather?lat=${Lat}&lon=${Lon}&units=imperial&cnt=48&appid=${apiKey}`;
   fetch(openWeatherURL)
     .then(function (response) {
       if (response.ok) {
@@ -129,7 +129,7 @@ function calculateToday({ name, main, wind, weather, dt }) {
 
 function determineFiveDay({ Lat, Lon }) {
   // call function to return lat/longitude
-  const openWeatherURL = `http://api.openweathermap.org/data/2.5/forecast?lat=${Lat}&lon=${Lon}&units=imperial&cnt=48&appid=${apiKey}`;
+  const openWeatherURL = `https://api.openweathermap.org/data/2.5/forecast?lat=${Lat}&lon=${Lon}&units=imperial&cnt=48&appid=${apiKey}`;
   fetch(openWeatherURL)
     .then(function (response) {
       if (response.ok) {
