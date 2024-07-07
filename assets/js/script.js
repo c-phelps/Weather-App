@@ -24,7 +24,7 @@ function appendAlert(city) {
 function determineLatLon(inCity) {
   // fetch city
   let strCity = inCity || $("#input-city").val();
-  const geocodingURL = `http://api.openweathermap.org/geo/1.0/direct?q=${strCity}&limit=1&appid=${apiKey}`;
+  const geocodingURL = `https://api.openweathermap.org/geo/1.0/direct?q=${strCity}&limit=1&appid=${apiKey}`;
   // form validation for city name
   if (strCity === "") {
     appendAlert(0);
@@ -46,6 +46,7 @@ function determineLatLon(inCity) {
             };
             // remove any alert that may be on screen
             $("#tempDanger").remove();
+            $("#input-city").val();
             // pass the coordinates on to determineWeather
             determineToday(objCoords, strCity);
             determineFiveDay(objCoords);
@@ -70,7 +71,7 @@ function determineLatLon(inCity) {
 
 // get today's weather only
 function determineToday({ Lat, Lon }, cityVal) {
-  const openWeatherURL = `http://api.openweathermap.org/data/2.5/weather?lat=${Lat}&lon=${Lon}&units=imperial&cnt=48&appid=${apiKey}`;
+  const openWeatherURL = `https://api.openweathermap.org/data/2.5/weather?lat=${Lat}&lon=${Lon}&units=imperial&cnt=48&appid=${apiKey}`;
   fetch(openWeatherURL)
     .then(function (response) {
       if (response.ok) {
@@ -128,7 +129,7 @@ function calculateToday({ name, main, wind, weather, dt }) {
 
 function determineFiveDay({ Lat, Lon }) {
   // call function to return lat/longitude
-  const openWeatherURL = `http://api.openweathermap.org/data/2.5/forecast?lat=${Lat}&lon=${Lon}&units=imperial&cnt=48&appid=${apiKey}`;
+  const openWeatherURL = `https://api.openweathermap.org/data/2.5/forecast?lat=${Lat}&lon=${Lon}&units=imperial&cnt=48&appid=${apiKey}`;
   fetch(openWeatherURL)
     .then(function (response) {
       if (response.ok) {
@@ -172,7 +173,7 @@ function calculateFiveDay({ city, list }) {
     }
     // new day - so take the sums and divide by the counts to get the means and send them to the display function
     else {
-            // if current date is not today, display below
+      // if current date is not today, display below
       if (curDate !== dayjs().format("YYYY-MM-DD"))
         calculateDisplayAverages(strCity, tempSum, humSum, windSum, counts, curDate, false, "", desc, icon);
       // increment day count and set the temp values to the first value found for the day, reset the counts to 1 and update the date
